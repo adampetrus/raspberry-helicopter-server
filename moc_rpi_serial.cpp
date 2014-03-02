@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'rpi_serial.h'
 **
-** Created: Mon Jan 13 20:17:45 2014
+** Created: Sun Mar 2 10:33:04 2014
 **      by: The Qt Meta Object Compiler version 63 (Qt 4.8.2)
 **
 ** WARNING! All changes made in this file will be lost!

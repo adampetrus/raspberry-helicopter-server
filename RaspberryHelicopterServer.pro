@@ -40,16 +40,16 @@ SOURCES += main.cpp \
 
 SOURCES += RPiHeliTCPServer.cpp
 
-INCLUDEPATH += ../../common/include/
-HEADERS +=    ../../common/include/rpi_control.h \
-    ../../common/include/rpi_sensors.h \
-    ../../common/include/rpi_log.h \
-    ../../common/include/rpi_vector.h \
-    ../../common/include/rpi_device.h
+INCLUDEPATH += ../raspberry-pi-helicopter-common/include/
+HEADERS +=    ../raspberry-pi-helicopter-common/include/rpi_control.h \
+    ../raspberry-pi-helicopter-common/include/rpi_sensors.h \
+    ../raspberry-pi-helicopter-common/include/rpi_log.h \
+    ../raspberry-pi-helicopter-common/include/rpi_vector.h \
+    ../raspberry-pi-helicopter-common/include/rpi_device.h
 
 
-SOURCES +=     ../../common/cpp/rpi_vector.cpp \
-    ../../common/cpp/rpi_control.cpp \
-    ../../common/cpp/rpi_log.cpp \
-    ../../common/cpp/rpi_sensors.cpp \
-    ../../common/cpp/rpi_device.cpp
+SOURCES +=     ../raspberry-pi-helicopter-common/cpp/rpi_vector.cpp \
+    ../raspberry-pi-helicopter-common/cpp/rpi_control.cpp \
+    ../raspberry-pi-helicopter-common/cpp/rpi_log.cpp \
+    ../raspberry-pi-helicopter-common/cpp/rpi_sensors.cpp \
+    ../raspberry-pi-helicopter-common/cpp/rpi_device.cpp

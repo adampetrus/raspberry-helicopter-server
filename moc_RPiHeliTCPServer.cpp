@@ -1,7 +1,7 @@
 /****************************************************************************
 ** Meta object code from reading C++ file 'RPiHeliTCPServer.h'
 **
-** Created: Sun Mar 2 10:32:50 2014
+** Created: Wed Aug 27 21:59:16 2014
 **      by: The Qt Meta Object Compiler version 63 (Qt 4.8.2)
 **
 ** WARNING! All changes made in this file will be lost!
@@ -23,7 +23,7 @@ static const uint qt_meta_data_RPIHelicopterServer[] = {
        6,       // revision
        0,       // classname
        0,    0, // classinfo
-      10,   14, // methods
+      14,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -41,6 +41,10 @@ static const uint qt_meta_data_RPIHelicopterServer[] = {
      167,   37,   37,   37, 0x0a,
      180,   37,   37,   37, 0x0a,
      193,   37,   37,   37, 0x0a,
+     216,  248,   37,   37, 0x0a,
+     251,  275,   37,   37, 0x0a,
+     279,   37,   37,   37, 0x0a,
+     295,  313,  315,   37, 0x0a,
 
        0        // eod
 };
@@ -53,6 +57,9 @@ static const char qt_meta_stringdata_RPIHelicopterServer[] = {
     "processRequest(rpi_request&)\0r\0"
     "loadConfig()\0saveConfig()\0"
     "setUltrasonicSensors()\0"
+    "processFastMessage(QByteArray&)\0da\0"
+    "processReadXml(QString)\0xml\0resetControls()\0"
+    "getBlockSize(int)\0g\0quint16\0"
 };
 
 void RPIHelicopterServer::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void **_a)
@@ -71,6 +78,11 @@ void RPIHelicopterServer::qt_static_metacall(QObject *_o, QMetaObject::Call _c, 
         case 7: _t->loadConfig(); break;
         case 8: _t->saveConfig(); break;
         case 9: _t->setUltrasonicSensors(); break;
+        case 10: _t->processFastMessage((*reinterpret_cast< QByteArray(*)>(_a[1]))); break;
+        case 11: _t->processReadXml((*reinterpret_cast< QString(*)>(_a[1]))); break;
+        case 12: _t->resetControls(); break;
+        case 13: { quint16 _r = _t->getBlockSize((*reinterpret_cast< int(*)>(_a[1])));
+            if (_a[0]) *reinterpret_cast< quint16*>(_a[0]) = _r; }  break;
         default: ;
         }
     }
@@ -108,9 +120,9 @@ int RPIHelicopterServer::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 10)
+        if (_id < 14)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 10;
+        _id -= 14;
     }
     return _id;
 }

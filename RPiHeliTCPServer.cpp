@@ -13,38 +13,54 @@ RPIHelicopterServer::RPIHelicopterServer(QString xfn,QObject *parent) :
     servo =0;
     servo = new rpi_servo(); //(RPI_SERVER);
     compass = new rpi_sensor_compass(rpi_sensor_compass::SENSOR_MODE_SERVER);
-    if (!compass->test()) exit(0);
+    //if (!compass->test()) exit(0);
     gps =new rpi_sensor_gps(rpi_sensor_compass::SENSOR_MODE_SERVER);
-    if (!gps->test()) exit(0);
-    accelerometer = new rpi_sensor_acc(rpi_sensor_acc::SENSOR_MODE_SERVER);
-    if (!accelerometer->test()) exit(0);
-    gyroscope = new rpi_sensor_gyro(rpi_sensor_gyro::SENSOR_MODE_SERVER);
-    if (!gyroscope->test()) exit(0);
+    gpsd.setMaster(gps);
+    //if (!gps->test()) exit(0);
+    //accelerometer = new rpi_sensor_acc(rpi_sensor_acc::SENSOR_MODE_SERVER);
+    //if (!accelerometer->test()) exit(0);
+    //gyroscope = new rpi_sensor_gyro(rpi_sensor_gyro::SENSOR_MODE_SERVER);
+    //if (!gyroscope->test()) exit(0);
     bpressure = new rpi_sensor_pressure(rpi_sensor_pressure::SENSOR_MODE_SERVER);
-    if (!bpressure->test()) exit(0);
+    //if (!bpressure->test()) exit(0);
     settings["noUltraSonicSensors"] = 4;
 
+
+    //zeroTime = QDateTime::currentDateTime();
+    imu9dof = new rpi_imu_9dof(rpi_device::SENSOR_MODE_SERVER,starttime);
+    //serialimu = new rpi_Serial(this,"/dev/ttyUSB0",imu9dof);
+    serialimu = new rpi_Serial(this,"/dev/ttyAMA0",imu9dof);
+    //serialimu->sPort->write("v");
+
+
+    qDebug() << "imu loaded";
+
     timer =0;
-    rpiserial = new rpi_Serial(parent,&starttime);
-    rpiserial->setCompass(compass);
-    rpiserial->setPressure(bpressure);
+    qDebug() << "Serial Started";
+    //rpiserial = new rpi_Serial(parent,&starttime);
+    //rpiserial->setCompass(compass);
+    //rpiserial->setPressure(bpressure);
+    //rpiserial->setAccelerometer(accelerometer);
+    //rpiserial->setGyroscope(gyroscope);
+    //rpiserial->run();
+    
 
-    loadConfig();
-    accelerometer->setAcceleration(0,0,0,QDateTime::currentDateTime());
-    gyroscope->setAcceleration(0,0,0,QDateTime::currentDateTime());
-
+    //loadConfig();
+    //accelerometer->setAcceleration(0,0,0,QDateTime::currentDateTime());
+    //gyroscope->setAcceleration(0,0,0,QDateTime::currentDateTime());
+    /*
     //saveConfig();
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(sendSensorData()));
     timer->start(1000);
-
+    */
 }
 
 void RPIHelicopterServer::sendSensorData() {
-    //qDebug() << "sendSensorData";
-    return;
-    sendCommand(RPI_SENSOR_ACC);
-    accelerometer->setAcceleration(1,0,0,QDateTime::currentDateTime());
+    qDebug() << "sendSensorData";
+    //return;
+    //sendCommand(RPI_SENSOR_ACC);
+    //accelerometer->setAcceleration(1,0,0,QDateTime::currentDateTime());
 }
 
 RPIHelicopterServer::~RPIHelicopterServer() {
@@ -55,12 +71,29 @@ RPIHelicopterServer::~RPIHelicopterServer() {
     timer =0;
 }
 
+void RPIHelicopterServer::resetControls() {
+	if(controls.size() > 0) controls[0]->setValue(128);
+	if(controls.size() > 1) controls[1]->setValue(128);
+}
+
+
 void RPIHelicopterServer::connectionMade() {
     qDebug() << "Connection Made";
     qDebug() << hasPendingConnections();
     QTcpSocket *h = nextPendingConnection();
+    //receiveSocketBlockSize[sockets.size()] = 0;
     sockets << h;
+    receiveSocketBlockSize << 0;
+    
+    //receiveSocketStream << *in;
+
+    receiveSocketDataArray << QByteArray();
+    //QDataStream* in(sockets[g]);
+    //in->setVersion(QDataStream::Qt_4_0);
+    
     connect(h,SIGNAL(readyRead()),this,SLOT(readRequest()));
+    connect(h,SIGNAL(disconnected()),this,SLOT(resetControls()));
+
     QList<int> requestOnConnect;
     requestOnConnect //<< rpi_request::REQUEST_ACCELEROMETER
                      //   << rpi_request::REQUEST_GYROSCOPE
@@ -82,16 +115,17 @@ void RPIHelicopterServer::processRequest(QDomElement &elem) {
     processRequest(r);
 }
 
+
 void RPIHelicopterServer::processRequest(rpi_request &r) {
     switch (r.type()) {
-        case rpi_request::REQUEST_ACCELEROMETER :  {
+        /*case rpi_request::REQUEST_ACCELEROMETER :  {
             sendXml(accelerometer->toXML());
             break;
-        }
-        case rpi_request::REQUEST_GYROSCOPE :  {
+        }*/
+        /*case rpi_request::REQUEST_GYROSCOPE :  {
             sendXml(gyroscope->toXML());
             break;
-        }
+        }*/
         case rpi_request::REQUEST_COMPASS :  {
             sendXml(compass->toXML());
             break;
@@ -104,7 +138,7 @@ void RPIHelicopterServer::processRequest(rpi_request &r) {
             sendXml(bpressure->toXML());
             break;
         }
-        case rpi_request::REQUEST_ULTRASONIC :  {
+        /*case rpi_request::REQUEST_ULTRASONIC :  {
             //sendXml(accelerometer->toXML());
             if (!r.reply().size()) return;
             int k =r.reply().first().toInt();
@@ -114,7 +148,7 @@ void RPIHelicopterServer::processRequest(rpi_request &r) {
                 sendXml(ultraSonicSensors[k]->toXML());
             }
             break;
-        }
+        }*/
             case rpi_request::REQUEST_CONTROL :  {
         //sendXml(accelerometer->toXML());
             if (!r.reply().size()) return;
@@ -153,13 +187,14 @@ void RPIHelicopterServer::processRequest(rpi_request &r) {
             break;
         }
         case rpi_request::REQUEST_INSERT_ULTRASONIC :  {
-            rpi_sensor_ultrasonic *u =
+            return;
+            /*rpi_sensor_ultrasonic *u =
             new rpi_sensor_ultrasonic(rpi_sensor_ultrasonic::SENSOR_MODE_CLIENT
                                       ,accelerometer->ZeroTime() );
             int id = ultraSonicSensors.size();
             u->setId(id);
             ultraSonicSensors << u;
-            sendXml(u->toXML());
+            sendXml(u->toXML());*/
             break;
         }
 
@@ -174,42 +209,141 @@ void RPIHelicopterServer::processRequest(rpi_request &r) {
             sendXml(r.toXML());
             break;
         }
+        //case rpi_request::REPLY{
+        
+        //}
         default : {break;}
     }
 
 }
 
-void RPIHelicopterServer::readRequest() {
-    for (int g=0;g<sockets.size();g++) {
-        QDataStream in(sockets[g]);
-           in.setVersion(QDataStream::Qt_4_0);
-           quint16 blockSize =0;
-           //qDebug() << "Reading";
-           while (sockets[g]->bytesAvailable() > (int)sizeof(quint16)) {
-           //qDebug() << "Reading";
-           in >> blockSize;
-           while (sockets[g]->bytesAvailable() < blockSize)
-               sockets[g]->waitForBytesWritten();
-           qDebug() << "Reading" << blockSize;
+quint16 RPIHelicopterServer::getBlockSize(int g) {
+     quint16 rblockSize =0;
+     quint16 *blockSize_ptr =0;
+     char charBlockSize[3];
+     charBlockSize[0] = receiveSocketDataArray[g][0];
+     charBlockSize[1] = receiveSocketDataArray[g][1];
+     rblockSize = quint16(charBlockSize[0]) << 8 | quint16(charBlockSize[1]) ;
+	qDebug() << "blockSize" << rblockSize;
+     return rblockSize;
+}
 
-           QString xml;
-           in >> xml;
+
+void RPIHelicopterServer::readRequest() {
+    qDebug() << "Server Read From Client"; 
+    //waitForReadyRead(-1);
+    quint16 blockSize =0;
+    qDebug() << "Socket Size" << sockets.size();
+    for (int g=0;g<sockets.size();g++) {
+           QDataStream in(sockets[g]);
+           in.setVersion(QDataStream::Qt_4_0);
+	   
+           
+           //qDebug() << "Reading";
+           //qDebug() << "incoming" <<  sockets[g]->bytesAvailable();
+           
+           const int readSize = sockets[g]->bytesAvailable();
+           char* tmp =new char[readSize+1];
+           in.readRawData(tmp,readSize);
+           
+           //qDebug() << tmp;
+           
+           receiveSocketDataArray[g].append(tmp,readSize);
+           qDebug() << "cache"  << receiveSocketDataArray[g].size();         
+           //while (sockets[g]->bytesAvailable() > (int)sizeof(quint16)) {
+           //qDebug() << "Reading";
+           //in >> blockSize;
+           
+           if (!receiveSocketDataArray[g].size()) continue; 
+
+           //blockSize_ptr = (quint16*) charBlockSize;
+           //quint16 blockSize2 = quint16(charBlockSize[1]) << 8 | quint16(charBlockSize[0]) ;
+           blockSize = getBlockSize(g);
+           if(blockSize==0) {
+            receiveSocketDataArray[g].clear();
+            continue;
+           }
+           
+           //qDebug() << blockSize1 << blockSize2;
+           
+           bool checkData = true;
+           
+           while(checkData) {
+                checkData = false;
+                //qDebug() << "Block Size:" << blockSize;
+
+		
+
+                if (blockSize+2<=receiveSocketDataArray[g].size() && (blockSize!=0) )  {
+
+		QByteArray messagePacket = receiveSocketDataArray[g].mid(6,blockSize-5);
+		//qDebug() << "Remove" << blockSize+2 << blockSize << "from" << receiveSocketDataArray[g].size();
+		receiveSocketDataArray[g].remove(0,blockSize+2);
+		//qDebug() << "Remove" << blockSize+2 << blockSize << "from" << receiveSocketDataArray[g].size();
+			
+		
+		if(blockSize == 12) {
+			processFastMessage(messagePacket);	
+		}else{
+			//for(int f=0;f<10;f++) qDebug() << f << messagePacket[f];
+			//for(int f=messagePacket.size() -10;f<messagePacket.size();f++) qDebug() << f << messagePacket[f];
+			
+			processReadXml(messagePacket);
+                }
+		}
+		if (!receiveSocketDataArray[g].size()) continue;
+		blockSize = getBlockSize(g);
+		//qDebug() << "New Block Size:" << blockSize;
+                if ( (blockSize<=receiveSocketDataArray[g].size() ) && (blockSize!=0))  checkData = true;
+                
+                
+                
+        
+           
+           }
+           
+        
+        }
+    }
+           //while (sockets[g]->bytesAvailable() < blockSize)
+           //    sockets[g]->waitForBytesWritten();
+           //qDebug() << "Reading" << blockSize;
+/*
+            if (blockSize < 5) {
+            
+            qDebug() << "Fast Message" ;    
+            
+            }else{
+
+
+           qDebug() << "end of current message";
+           }
+           qDebug() << "flush socket";
+          //sockets[g]->flush();
+           }
+            
+}*/
+
+void RPIHelicopterServer::processReadXml(QString xml) {
+
+           //QString xml;
+           //in >> xml;
            QDomDocument xmlDoc;
            xmlDoc.setContent(xml);
 
            QDomElement docElem = xmlDoc.documentElement();
 
-           qDebug() << "received: "<< docElem.tagName() << xml;
+           //qDebug() << "received: "<< docElem.tagName() << xml;
            if (docElem.tagName() == "request") {
                processRequest(docElem);
            }else if (docElem.tagName() == "Gyroscope") {
-               gyroscope->readDomElement(docElem);
+               //gyroscope->readDomElement(docElem);
            }else if (docElem.tagName() == "Accelerometer") {
-               accelerometer->readDomElement(docElem);
+               //accelerometer->readDomElement(docElem);
            }else if (docElem.tagName() == "Compass") {
                 compass->readDomElement(docElem);
            }else if (docElem.tagName() == "GPS") {
-                compass->readDomElement(docElem);
+                gps->readDomElement(docElem);
            }else if (docElem.tagName() == "Pressure") {
                 bpressure->readDomElement(docElem);
            }else if (docElem.tagName() == "Control") {
@@ -222,12 +356,8 @@ void RPIHelicopterServer::readRequest() {
                }
                delete temp;
            }
-           qDebug() << "end of current message";
            }
-           qDebug() << "flush socket";
-          sockets[g]->flush();
-           }
-}
+
 
 void RPIHelicopterServer::readXGPS() {
 
@@ -249,7 +379,7 @@ void RPIHelicopterServer::sendCommand(int type) {
                 switch (type) {
                     case RPI_SENSOR_ACC : {
                         //qDebug()
-                        out << accelerometer->toXML(true,false);
+                        //out << accelerometer->toXML(true,false);
                         //out << .toLocal8Bit().toHex();
                         break;}
                     case RPI_SENSOR_COMPASS : { break;}
@@ -273,8 +403,12 @@ void RPIHelicopterServer::sendCommand(int type) {
                 sockets[g]->flush();
             }else{
                 QTcpSocket *tg = sockets[g];
+                //receiveSocketStream *rg = receiveSocketStream[g];
+                //delete rg;
                 delete tg;
+                receiveSocketDataArray.removeAt(g);
                 sockets.removeAt(g);
+                //receiveSocketStream.removeAt(g);
                 g--;
             }
         }
@@ -302,7 +436,7 @@ void RPIHelicopterServer::sendXml(QString x) {
 }
 
 void RPIHelicopterServer::loadConfig(){
-    QFile file("rpi_config.xml");
+    QFile file("/etc/rpi_heli/rpi_config.xml");
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return;
     QDomDocument xmlDoc;
     xmlDoc.setContent(file.readAll());
@@ -321,7 +455,7 @@ void RPIHelicopterServer::loadConfig(){
         QDomElement f = n.toElement(); // try to convert the node to an element.
         //qDebug() << "Loading " << f.tagName();
         if(!f.isNull()) {
-            if (f.tagName() == "Accelerometer") {
+            /*if (f.tagName() == "Accelerometer") {
 
                 accelerometer->readDomElement(f);
                 accelerometer->reset();
@@ -330,7 +464,7 @@ void RPIHelicopterServer::loadConfig(){
                 gyroscope->readDomElement(f);
                 gyroscope->reset();
             }
-            else if (f.tagName() == "Compass") {
+            else */if (f.tagName() == "Compass") {
                 compass->readDomElement(f);
             }
             else if (f.tagName() == "Pressure") {
@@ -349,11 +483,11 @@ void RPIHelicopterServer::loadConfig(){
                 //*/
             }
             else if (f.tagName() == "Ultrasonic") {
-                rpi_sensor_ultrasonic *u = new rpi_sensor_ultrasonic(rpi_sensor_ultrasonic::SENSOR_MODE_SERVER,accelerometer->ZeroTime());
-                u->readDomElement(f);
-                ultraSonicSensors << u;
-                u->setId(ultrasonicId);
-                ultrasonicId++;
+                //rpi_sensor_ultrasonic *u = new rpi_sensor_ultrasonic(rpi_sensor_ultrasonic::SENSOR_MODE_SERVER,accelerometer->ZeroTime());
+                //u->readDomElement(f);
+                //ultraSonicSensors << u;
+                //u->setId(ultrasonicId);
+                //ultrasonicId++;
             }
         }
         n = n.nextSibling();
@@ -377,8 +511,8 @@ void RPIHelicopterServer::saveConfig(){
     root.appendChild(presroot);
 
     //QDomDocument acc;
-    accelerometer->addtoDomDoc(config,accroot,false,true);
-    gyroscope->addtoDomDoc(config,gyroroot,false,true);
+    //accelerometer->addtoDomDoc(config,accroot,false,true);
+    //gyroscope->addtoDomDoc(config,gyroroot,false,true);
     compass->addtoDomDoc(config,comproot,false,true);
     bpressure->addtoDomDoc(config,presroot,false,true);
     gps->addtoDomDoc(config,gpsroot,false,true);
@@ -395,9 +529,14 @@ void RPIHelicopterServer::saveConfig(){
         ultraSonicSensors[k]->addtoDomDoc(config,ultrroot,false,true);
     }
 
-    QFile file("rpi_config.xml");
+    QFile file("/etc/rpi_heli/rpi_config.xml");
     if (!file.open(QIODevice::WriteOnly)) return;
     file.write(config.toByteArray());
 }
+
+void RPIHelicopterServer::processFastMessage(QByteArray &da) { 
+	qDebug() << "Fast Message";
+}
+
 
 

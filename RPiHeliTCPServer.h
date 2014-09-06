@@ -13,7 +13,13 @@
 #include "rpi_servo.h"
 #include "rpi_serial.h"
 #include "rpi_control.h"
+#include "gps_device.h"
 #include <QList>
+#include <QDataStream>
+#include <QByteArray>
+#include <QDateTime>
+
+
 
 #ifndef RPIHELITCPSERVER_H
 #define RPIHELITCPSERVER_H
@@ -43,7 +49,8 @@ class RPIHelicopterServer : public QTcpServer //, public QCoreApplication
                        RPI_SENSOR_ULTRASONIC_5,
                        RPI_SENSOR_ULTRASONIC_6,
                        RPI_SENSOR_ULTRASONIC_7,
-                       RPI_SENSOR_ULTRASONIC_8
+                       RPI_SENSOR_ULTRASONIC_8,
+                       RPI_RECEIVED_COMPLETE =10001
                      };
 public:
     explicit RPIHelicopterServer(QString xfn,QObject *parent = 0);
@@ -53,6 +60,7 @@ public:
     rpi_servo *servo;
     QMap <QString,QVariant> settings;
     void sendXml(QString x);
+    QDateTime zeroTime;
 
 public slots:
     void connectionMade();
@@ -65,17 +73,28 @@ public slots:
     void loadConfig();
     void saveConfig();
     void setUltrasonicSensors();
+    void processFastMessage(QByteArray &da);
+    void processReadXml(QString xml);
+    void resetControls(); 
+    quint16 getBlockSize(int g);
 private:
+    gps_device gpsd;
     QTimer *timer ;
     QDateTime starttime;
     QString xmlFileName;
     rpi_sensor_compass *compass;
     rpi_sensor_gps *gps;
-    rpi_sensor_acc *accelerometer;
-    rpi_sensor_gyro *gyroscope;
+    //rpi_sensor_acc *accelerometer;
+    //rpi_sensor_gyro *gyroscope;
+    rpi_Serial *serialimu;
+    rpi_imu_9dof *imu9dof;
     rpi_sensor_pressure *bpressure;
     QList <rpi_sensor_ultrasonic *> ultraSonicSensors;
     QList <rpi_control *> controls;
+    QList<QByteArray> receiveSocketDataArray;
+    //QList<QDataStream*> receiveSocketStream;
+    QList<quint16> receiveSocketBlockSize;
+    
 };
 
 #endif // RPIHELITCPSERVER_H

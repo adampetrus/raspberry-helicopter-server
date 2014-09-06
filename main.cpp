@@ -16,4 +16,5 @@ int main(int argc, char *argv[])
     qDebug() << "Raspberry Pi Helicopter Server";
     server.listen(QHostAddress::Any,1025);
     return a.exec();
+    qDebug() << "Program Finished";
 }
